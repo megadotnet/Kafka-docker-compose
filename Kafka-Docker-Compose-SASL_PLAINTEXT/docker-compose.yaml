@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    volumes:
+       - ./data/zookeeper:/data
+       - ./config:/opt/zookeeper-3.4.13/conf
+       - ./config:/opt/zookeeper-3.4.13/secrets
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      SERVER_JVMFLAGS: -Djava.security.auth.login.config=/opt/zookeeper-3.4.13/secrets/server_jaas.conf
+    ports:
+      - 2181:2181
+    restart: always
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports: 
+      - 9092:9092
+    volumes:
+      - ./data/kafka:/kafka
+      - ./config:/opt/kafka/secrets
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://:9093,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://172.18.0.155:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:SASL_PLAINTEXT,EXTERNAL:SASL_PLAINTEXT
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+      KAFKA_OPTS: -Djava.security.auth.login.config=/opt/kafka/secrets/server_jaas.conf
+    restart: always
+ ##  kafdrop 监控kafka的Ui工具 
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    restart: always
+    ports:
+       - "19001:9000"
+    environment:
+       KAFKA_BROKERCONNECT: "kafka:9093"
+    ## 如kafka开启了sasl认证后以下 sasl认证链接是必要的，下面的事经过base64加密后的结果
+       KAFKA_PROPERTIES: c2FzbC5tZWNoYW5pc206IFBMQUlOCiAgICAgIHNlY3VyaXR5LnByb3RvY29sOiBTQVNMX1BMQUlOVEVYVAogICAgICBzYXNsLmphYXMuY29uZmlnOiBvcmcuYXBhY2hlLmthZmthLmNvbW1vbi5zZWN1cml0eS5zY3JhbS5TY3JhbUxvZ2luTW9kdWxlIHJlcXVpcmVkIHVzZXJuYW1lPSdhZG1pbicgcGFzc3dvcmQ9J1J2QjlTdVlySk1QUic7
+    depends_on:
+      - zookeeper
+      - kafka
+    cpus: '1'
+    mem_limit: 1024m
+    container_name: kafdrop
