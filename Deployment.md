@@ -117,9 +117,9 @@ flowchart TB
     Browser -->|HTTP:19001| Kafdrop
 
     %% 内部通信链路
-    Kafdrop -->|SASL_PLAINTEXT:9093\n(INTERNAL)| Kafka
-    Kafka -->|TCP:2181| ZooKeeper
-    Kafdrop -.->|间接访问| ZooKeeper
+    Kafdrop -->|"SASL_PLAINTEXT:9093 (INTERNAL)"| Kafka
+    Kafka -->|"TCP:2181"| ZooKeeper
+    Kafdrop -.->|"间接访问"| ZooKeeper
 
     %% 数据持久化链路
     ZooKeeper -->|挂载:/data| ZK_Data
